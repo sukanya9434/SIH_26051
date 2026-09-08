@@ -13,15 +13,14 @@ import {
   Flame,
 } from "lucide-react"
 
-import {
-  getClimate,
-  type ThermalEnergyRequest,
-} from "@/lib/api"
+import { type ThermalEnergyRequest } from "@/lib/api"
+import { useClimateAutoFill } from "@/hooks/useClimateAutoFill"
 import { predictThermalEnergy, type ThermalEnergyResult } from "@/lib/api/thermal-energy"
 import type { DesignResult } from "@/lib/api/design"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { CANONICAL_WALL_MATERIALS, WALL_MATERIALS } from "@/lib/materials"
 
 type FormState = {
   latitude: string
@@ -49,7 +48,6 @@ const initialForm: FormState = {
   thermal_mass_kj_k: "",
 }
 
-const WALL_MATERIALS = ["Concrete", "Mud_Brick", "Rammed_Earth", "Stone"] as const
 
 function optionalNumber(value: string): number | undefined {
   return value.trim() === "" ? undefined : Number(value)
@@ -59,12 +57,20 @@ export default function ThermalEnergyPage() {
   const [form, setForm] = useState<FormState>(initialForm)
   const [loading, setLoading] = useState(false)
   const [locationLoading, setLocationLoading] = useState(false)
-  const [climateSynced, setClimateSynced] = useState(false)
   const [error, setError] = useState("")
-  const [showOptionalClimate, setShowOptionalClimate] = useState(false)
   const [result, setResult] = useState<ThermalEnergyResult | null>(null)
   const [designResult, setDesignResult] = useState<DesignResult | null>(null)
   const [prefillMessage, setPrefillMessage] = useState("")
+
+  const { manualOverride, setManualOverride, climateLoading, climateError, climateSynced } = useClimateAutoFill({
+    latitude: form.latitude,
+    longitude: form.longitude,
+    toFields: (climate) => ({
+      ambient_temp_c: String(climate.ambient_temp_c),
+      ghi_w_m2: String(Math.round((climate.ghi_kwh_m2_day * 1000) / 24)),
+    }),
+    onFields: (fields) => setForm((previous) => ({ ...previous, ...fields })),
+  })
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -103,7 +109,6 @@ export default function ThermalEnergyPage() {
 
   async function useMyLocation() {
     setError("")
-    setClimateSynced(false)
 
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by this browser.")
@@ -113,7 +118,7 @@ export default function ThermalEnergyPage() {
     setLocationLoading(true)
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
         const lat = Number(position.coords.latitude.toFixed(4))
         const lon = Number(position.coords.longitude.toFixed(4))
 
@@ -123,21 +128,7 @@ export default function ThermalEnergyPage() {
           longitude: String(lon),
         }))
 
-        // Auto-fetch real NASA POWER climate data for these coordinates
-        try {
-          const climate = await getClimate(lat, lon)
-          setForm((prev) => ({
-            ...prev,
-            ambient_temp_c: String(climate.ambient_temp_c),
-            // Leave GHI blank so the backend solar service calculates it.
-            ghi_w_m2: "",
-          }))
-          setClimateSynced(true)
-        } catch {
-          // If NASA POWER backend call is unreachable, keep coordinates
-        } finally {
-          setLocationLoading(false)
-        }
+        setLocationLoading(false)
       },
       () => {
         setLocationLoading(false)
@@ -302,14 +293,18 @@ export default function ThermalEnergyPage() {
                     2. Climate details
                   </h2>
                 </div>
-                <label className="mb-4 flex cursor-pointer items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={showOptionalClimate} onChange={(e) => setShowOptionalClimate(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />Add climate details manually</label>
-                {showOptionalClimate && <div className="grid grid-cols-2 gap-3">
+                <label className="mb-4 flex cursor-pointer items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={manualOverride} onChange={(e) => setManualOverride(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />Add climate details manually</label>
+                {climateLoading && <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />Fetching climate data...</div>}
+                {climateError && <div className="mb-3 flex items-center gap-2 border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger"><AlertCircle className="h-3.5 w-3.5" />{climateError}</div>}
+                {climateSynced && !climateLoading && !climateError && <div className="mb-3 flex items-center gap-2 text-xs text-success"><CloudSun className="h-3.5 w-3.5" />NASA POWER values synced for these coordinates.</div>}
+                <div className="grid grid-cols-2 gap-3">
                   <Field label="Ambient Temp (°C)">
                     <Input
                       type="number"
                       step="any"
                       className="font-mono text-sm"
                       value={form.ambient_temp_c}
+                      disabled={!manualOverride && !climateError}
                       onChange={(e) => updateField("ambient_temp_c", e.target.value)}
                     />
                   </Field>
@@ -319,10 +314,11 @@ export default function ThermalEnergyPage() {
                       step="any"
                       className="font-mono text-sm"
                       value={form.ghi_w_m2}
+                      disabled={!manualOverride && !climateError}
                       onChange={(e) => updateField("ghi_w_m2", e.target.value)}
                     />
                   </Field>
-                </div>}
+                </div>
               </div>
 
               {/* Envelope Geometry & Materials */}
@@ -350,9 +346,9 @@ export default function ThermalEnergyPage() {
                         value={form.wall_material}
                         onChange={(e) => updateField("wall_material", e.target.value)}
                       >
-                        {WALL_MATERIALS.map((mat) => (
+                        {CANONICAL_WALL_MATERIALS.map((mat) => (
                           <option key={mat} value={mat}>
-                            {mat.replace("_", " ")}
+                            {WALL_MATERIALS[mat].displayName}
                           </option>
                         ))}
                       </select>

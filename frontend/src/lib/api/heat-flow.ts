@@ -2,6 +2,8 @@
  * lib/api/heat-flow.ts — Typed API client and client-side fallback for Task 3 Heat Flow & 3D Visualization.
  */
 
+import { getWallMaterialDefinition } from "@/lib/materials";
+
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000";
 
@@ -158,13 +160,7 @@ export function generateClientFallback(req: HeatFlowRequest): HeatFlowResponse {
   const wallNet = Math.round(Math.max(1, wallGross - glazeArea - doorArea) * 100) / 100;
   const roofArea = Math.round(((width * length) / Math.cos(Math.PI / 6)) * 100) / 100;
 
-  const matK: Record<string, number> = {
-    Concrete: 1.4,
-    Mud_Brick: 0.6,
-    Rammed_Earth: 0.9,
-    Stone: 1.8,
-  };
-  const k = matK[req.wall_material] ?? 1.2;
+  const k = getWallMaterialDefinition(req.wall_material).k;
   const rMat = (req.wall_thickness_cm / 100) / k;
   const rTotal = rMat + req.insulation_r_value + 0.17;
   const uWall = Math.round((1 / rTotal) * 1000) / 1000;

@@ -10,11 +10,17 @@ MATERIAL_COSTS_INR_PER_M3 = {
     "Rammed_Earth": 2000,
 }
 
+try:
+    from services.envelope_physics import MATERIAL_CONDUCTIVITY
+except ImportError:
+    from backend.services.envelope_physics import MATERIAL_CONDUCTIVITY
+
 MATERIALS = {
-    "Concrete": {"u_value": 1.4, "cost_per_m3_inr": MATERIAL_COSTS_INR_PER_M3["Concrete"]},
-    "Mud_Brick": {"u_value": 0.6, "cost_per_m3_inr": MATERIAL_COSTS_INR_PER_M3["Mud_Brick"]},
-    "Rammed_Earth": {"u_value": 0.9, "cost_per_m3_inr": MATERIAL_COSTS_INR_PER_M3["Rammed_Earth"]},
-    "Stone": {"u_value": 1.8, "cost_per_m3_inr": MATERIAL_COSTS_INR_PER_M3["Stone"]},
+    mat: {
+        "u_value": MATERIAL_CONDUCTIVITY[mat],
+        "cost_per_m3_inr": MATERIAL_COSTS_INR_PER_M3[mat],
+    }
+    for mat in ("Concrete", "Mud_Brick", "Rammed_Earth", "Stone")
 }
 GLAZING = {
     "single": {"u_value": 5.6, "cost_per_m2_inr": 1800},

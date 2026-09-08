@@ -24,6 +24,7 @@ import { Dynamic3DView } from "@/components/heat-flow/Dynamic3DView";
 import { TimeScrubber } from "@/components/heat-flow/TimeScrubber";
 import { HeatFlowChart } from "@/components/heat-flow/HeatFlowChart";
 import { Badge } from "@/components/ui/badge";
+import { CANONICAL_WALL_MATERIALS, WALL_MATERIALS } from "@/lib/materials";
 
 const PRESET_OPTIONS = [
   {
@@ -380,14 +381,19 @@ export default function HeatFlowPage() {
                       Wall Material
                     </label>
                     <select
+                      id="select-wall-material"
                       value={params.wall_material}
                       onChange={(e) => handleParamChange("wall_material", e.target.value)}
                       className="mt-1 w-full rounded-none border border-border bg-muted/60 px-3 py-1.5 text-xs focus:border-accent focus:outline-none"
                     >
-                      <option value="Stone">Stone Masonry (k=1.8)</option>
-                      <option value="Rammed_Earth">Rammed Earth (k=0.9)</option>
-                      <option value="Mud_Brick">Mud Brick / Adobe (k=0.6)</option>
-                      <option value="Concrete">Reinforced Concrete (k=1.4)</option>
+                      {CANONICAL_WALL_MATERIALS.map((mat) => {
+                        const def = WALL_MATERIALS[mat];
+                        return (
+                          <option key={mat} value={mat}>
+                            {def.displayName} (k={def.k})
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
 

@@ -11,6 +11,7 @@ interface Dynamic3DViewProps {
   currentPoint: HourlyHeatFlowPoint;
   hourlyData: HourlyHeatFlowPoint[];
   wallMaterial: string;
+  className?: string;
 }
 
 const DynamicCanvas = dynamic(
@@ -18,7 +19,7 @@ const DynamicCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[480px] w-full flex-col items-center justify-center rounded-none border border-border bg-card shadow-sm sm:h-[540px]">
+      <div className="flex h-[550px] w-full flex-col items-center justify-center rounded-none border border-border bg-card shadow-sm sm:h-[620px]">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
         <p className="mt-3 text-xs font-medium text-muted-foreground">
           Initializing WebGL 3D Solar Canvas...

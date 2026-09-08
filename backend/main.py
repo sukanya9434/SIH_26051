@@ -17,10 +17,14 @@ load_dotenv()
 try:
     from routers import indoor_temp, design, thermal_energy, optimization, heat_flow
     from services import model_loader, climate
+    from catalog import MATERIALS, MATERIAL_COSTS_INR_PER_M3
+    from routers.heat_flow import MATERIAL_THERMAL_MASS
 except ImportError:
     from backend.routers import indoor_temp, design, thermal_energy, optimization, heat_flow
     from backend.services import model_loader
     from backend.services import climate
+    from backend.catalog import MATERIALS, MATERIAL_COSTS_INR_PER_M3
+    from backend.routers.heat_flow import MATERIAL_THERMAL_MASS
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -87,6 +91,19 @@ def climate_data(latitude: float, longitude: float, start: str | None = None, en
     except (ValueError, RuntimeError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return result.__dict__
+
+
+@app.get("/materials", tags=["Material Data"])
+def material_catalog():
+    """Expose the canonical material values used by physics and optimization."""
+    return {
+        name: {
+            "thermal_mass_MJ_m3K": MATERIAL_THERMAL_MASS[name],
+            "k_W_mK": MATERIALS[name]["u_value"],
+            "lsor_cost_inr_m3": MATERIAL_COSTS_INR_PER_M3[name],
+        }
+        for name in ("Concrete", "Mud_Brick", "Rammed_Earth", "Stone")
+    }
 
 # Mount prediction routers
 app.include_router(indoor_temp.router)

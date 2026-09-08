@@ -90,16 +90,31 @@ export function SunTracker({ currentPoint, hourlyData, radius = 13.0 }: SunTrack
       {/* Sun Mesh & Core Light */}
       {isSunUp ? (
         <group position={[sunX, sunY, sunZ]}>
+          {/* Warm atmospheric halo and a crisp high-altitude sun disc */}
+          <pointLight
+            color="#ffd27a"
+            intensity={Math.min(4, lightIntensity * 1.2)}
+            distance={10}
+            decay={2}
+          />
+          <mesh rotation={[0.18, -0.32, 0.12]}>
+            <torusGeometry args={[0.84, 0.035, 12, 64]} />
+            <meshBasicMaterial color="#fbbf24" transparent opacity={0.7} />
+          </mesh>
+          <mesh rotation={[0.18, -0.32, 0.12]}>
+            <torusGeometry args={[1.08, 0.025, 12, 64]} />
+            <meshBasicMaterial color="#fde68a" transparent opacity={0.35} />
+          </mesh>
           {/* Glowing core sphere */}
           <mesh>
-            <sphereGeometry args={[0.55, 32, 32]} />
+            <sphereGeometry args={[0.62, 40, 40]} />
             <meshBasicMaterial color={lightColor} />
           </mesh>
 
           {/* Corona lens glow */}
           <mesh>
-            <sphereGeometry args={[0.9, 16, 16]} />
-            <meshBasicMaterial color="#fef08a" transparent opacity={0.3} />
+            <sphereGeometry args={[1.3, 24, 24]} />
+            <meshBasicMaterial color="#fef08a" transparent opacity={0.13} depthWrite={false} />
           </mesh>
 
           {/* Directional sunlight casting shadows towards shelter */}

@@ -14,9 +14,9 @@ import {
 
 import {
   predictIndoorTemp,
-  getClimate,
   type IndoorTempRequest,
 } from "@/lib/api"
+import { useClimateAutoFill } from "@/hooks/useClimateAutoFill"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -100,10 +100,8 @@ export default function IndoorTemperaturePage() {
   const [form, setForm] = useState<FormState>(initialForm)
   const [loading, setLoading] = useState(false)
   const [locationLoading, setLocationLoading] = useState(false)
-  const [climateSynced, setClimateSynced] = useState(false)
   const [error, setError] = useState("")
   const [result, setResult] = useState<number | null>(null)
-  const [showOptionalClimate, setShowOptionalClimate] = useState(false)
 
   function updateField(field: keyof FormState, value: string) {
     setForm((previous) => ({
@@ -112,9 +110,19 @@ export default function IndoorTemperaturePage() {
     }))
   }
 
+  const { manualOverride, setManualOverride, climateLoading, climateError, climateSynced } = useClimateAutoFill({
+    latitude: form.latitude,
+    longitude: form.longitude,
+    toFields: (climate) => ({
+      outdoor_temperature_C: String(climate.ambient_temp_c),
+      wind_speed_mps: String(climate.wind_speed_ms),
+      GHI_W_m2: String(Math.round((climate.ghi_kwh_m2_day * 1000) / 24)),
+    }),
+    onFields: (fields) => setForm((previous) => ({ ...previous, ...fields })),
+  })
+
   async function useMyLocation() {
     setError("")
-    setClimateSynced(false)
 
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by this browser.")
@@ -124,7 +132,7 @@ export default function IndoorTemperaturePage() {
     setLocationLoading(true)
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
         const lat = Number(position.coords.latitude.toFixed(4))
         const lon = Number(position.coords.longitude.toFixed(4))
 
@@ -134,22 +142,7 @@ export default function IndoorTemperaturePage() {
           longitude: String(lon),
         }))
 
-        // Auto-fetch real NASA POWER climate data for these exact coordinates
-        try {
-          const climate = await getClimate(lat, lon)
-          setForm((prev) => ({
-            ...prev,
-            outdoor_temperature_C: String(climate.ambient_temp_c),
-            wind_speed_mps: String(climate.wind_speed_ms),
-            // Let the backend pvlib solar engine fill GHI for the selected hour.
-            GHI_W_m2: "",
-          }))
-          setClimateSynced(true)
-        } catch {
-          // If NASA POWER backend call is unreachable, keep coordinates
-        } finally {
-          setLocationLoading(false)
-        }
+        setLocationLoading(false)
       },
       () => {
         setLocationLoading(false)
@@ -313,14 +306,18 @@ export default function IndoorTemperaturePage() {
                     3. Ambient Environment (Auto-Filled)
                   </h2>
                 </div>
-                <label className="mb-4 flex cursor-pointer items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={showOptionalClimate} onChange={(e) => setShowOptionalClimate(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />Add environmental details manually</label>
-                {showOptionalClimate && <div className="grid grid-cols-3 gap-3">
+                <label className="mb-4 flex cursor-pointer items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={manualOverride} onChange={(e) => setManualOverride(e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />Add environmental details manually</label>
+                {climateLoading && <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />Fetching climate data...</div>}
+                {climateError && <div className="mb-3 flex items-center gap-2 border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger"><AlertCircle className="h-3.5 w-3.5" />{climateError}</div>}
+                {climateSynced && !climateLoading && !climateError && <div className="mb-3 flex items-center gap-2 text-xs text-success"><CloudSun className="h-3.5 w-3.5" />NASA POWER values synced for these coordinates.</div>}
+                <div className="grid grid-cols-3 gap-3">
                   <Field label="Outdoor Temp (°C)">
                     <Input
                       type="number"
                       step="any"
                       className="font-mono text-sm"
                       value={form.outdoor_temperature_C}
+                      disabled={!manualOverride && !climateError}
                       onChange={(e) => updateField("outdoor_temperature_C", e.target.value)}
                     />
                   </Field>
@@ -330,6 +327,7 @@ export default function IndoorTemperaturePage() {
                       step="any"
                       className="font-mono text-sm"
                       value={form.wind_speed_mps}
+                      disabled={!manualOverride && !climateError}
                       onChange={(e) => updateField("wind_speed_mps", e.target.value)}
                     />
                   </Field>
@@ -339,10 +337,11 @@ export default function IndoorTemperaturePage() {
                       step="any"
                       className="font-mono text-sm"
                       value={form.GHI_W_m2}
+                      disabled={!manualOverride && !climateError}
                       onChange={(e) => updateField("GHI_W_m2", e.target.value)}
                     />
                   </Field>
-                </div>}
+                </div>
               </div>
 
               {/* Envelope Specifications */}

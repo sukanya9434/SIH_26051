@@ -4,6 +4,7 @@ import React, { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { ShelterGeometry, EnvelopeUValues, HourlyHeatFlowPoint } from "@/lib/api/heat-flow";
+import { getWallMaterialDefinition } from "@/lib/materials";
 
 interface ShelterMeshProps {
   geometry: ShelterGeometry;
@@ -14,6 +15,16 @@ interface ShelterMeshProps {
   showThermalHeatmap?: boolean;
 }
 
+/**
+ * Traditional Ladakhi Vernacular Shelter Mesh:
+ * - Thick earthen / stone masonry walls
+ * - Flat roof with perimeter parapet edge
+ * - Protruding horizontal timber beam-ends ("taluk" joist ends) beneath the roofline
+ * - Deep-set south window embrasure with heavy timber lintel
+ * - Simple muted wooden entrance door
+ * - Dynamic material-to-color mapping reflecting active material selection
+ * - 100% preserved thermal heat-loss glow, radiation pulse, and solar interactivity
+ */
 export function ShelterMesh({
   geometry,
   currentPoint,
@@ -27,32 +38,24 @@ export function ShelterMesh({
     length_m: L,
     width_m: W,
     wall_height_m: H_wall,
-    roof_height_m: H_roof,
   } = geometry;
 
   // Thermal heat loss intensity (0.0 to 1.0 normalized)
   const lossIntensity = useMemo(() => {
-    // Standard Ladakh envelope loss ranges from 150W (warm noon) to 1200W (sub-zero night)
     return Math.min(1.0, Math.max(0.1, currentPoint.q_total_w / 1000.0));
   }, [currentPoint.q_total_w]);
 
-  // Wall base color dependent on chosen building material
-  const baseWallColor = useMemo(() => {
-    const mat = wallMaterial.toLowerCase();
-    if (mat.includes("rammed")) return "#92400e"; // Warm rammed earth ochre
-    if (mat.includes("mud") || mat.includes("brick")) return "#b45309"; // Sun-dried adobe brick
-    if (mat.includes("concrete")) return "#64748b"; // Cast concrete
-    return "#57534e"; // Natural Ladakh stone masonry
-  }, [wallMaterial]);
+  // Wall base color mapped directly from canonical material definition
+  const materialDef = useMemo(() => getWallMaterialDefinition(wallMaterial), [wallMaterial]);
+  const baseWallColor = materialDef.baseColor;
 
   // Wall thermal emissive glow based on heat loss rate (Watts)
   const emissiveColor = useMemo(() => {
     if (!showThermalHeatmap) return "#000000";
-    // Heat loss emits infrared thermal radiation glow (cyan -> amber -> deep coral red)
-    if (lossIntensity > 0.75) return "#dc2626"; // High loss (cold winter night)
+    if (lossIntensity > 0.75) return "#dc2626"; // High loss (sub-zero Ladakh night)
     if (lossIntensity > 0.45) return "#ea580c"; // Medium loss
     if (lossIntensity > 0.25) return "#f59e0b"; // Mild loss
-    return "#0ea5e9"; // Very low loss / balanced
+    return "#0ea5e9"; // Low loss / solar balanced
   }, [lossIntensity, showThermalHeatmap]);
 
   const emissiveIntensity = useMemo(() => {
@@ -60,114 +63,143 @@ export function ShelterMesh({
     return 0.15 + lossIntensity * 0.45;
   }, [lossIntensity, showThermalHeatmap]);
 
-  // Window geometry on South facade (+Z)
-  // Window area = geometry.glazing_area_m2
-  const windowHeight = 1.3;
-  const windowWidth = Math.min(L * 0.85, Math.max(1.0, geometry.glazing_area_m2 / windowHeight));
+  // Vernacular wall thickness: ~35cm representing thick Himalayan masonry
+  const T_wall = 0.35;
 
-  // Door geometry (East wall or offset on South)
+  // Deep-set South window geometry (+Z)
+  const windowHeight = 1.25;
+  const windowWidth = Math.min(L * 0.75, Math.max(0.9, geometry.glazing_area_m2 / windowHeight));
+  const sillHeight = 0.7;
+  const headerHeight = Math.max(0.2, H_wall - sillHeight - windowHeight);
+
+  // Door geometry on East wall (+X)
   const doorW = 0.9;
   const doorH = 2.0;
 
-  // Custom roof geometry: 2 pitches meeting at the ridge
-  const roofPitchAngle = Math.atan2(H_roof, W / 2);
-  const slopeLength = Math.sqrt(Math.pow(W / 2, 2) + Math.pow(H_roof, 2)) + 0.3; // with overhang
-  const roofOverhangX = L + 0.5;
+  // Protruding timber joist beam-ends ("taluk") calculation
+  const joistCount = Math.max(5, Math.round(L * 1.6));
+  const joistSpacing = (L - 0.6) / (joistCount - 1);
+  const joistPositions = useMemo(() => {
+    const list: number[] = [];
+    for (let i = 0; i < joistCount; i++) {
+      list.push(-L / 2 + 0.3 + i * joistSpacing);
+    }
+    return list;
+  }, [L, joistCount, joistSpacing]);
 
-  // Animate pulse waves representing heat escaping through the envelope
+  // Animate pulse waves representing heat escaping through envelope
   useFrame((state) => {
     if (pulseRef.current && showThermalHeatmap) {
       const t = state.clock.getElapsedTime();
-      const scale = 1.0 + 0.03 * Math.sin(t * 3.0 * (0.8 + lossIntensity));
+      const scale = 1.0 + 0.025 * Math.sin(t * 3.0 * (0.8 + lossIntensity));
       pulseRef.current.scale.set(scale, scale, scale);
     }
   });
 
   return (
     <group position={[0, 0, 0]}>
-      {/* ── Concrete/Stone Plinth Foundation ── */}
+      {/* ── Concrete / Stone Plinth Foundation ── */}
       <mesh position={[0, 0.1, 0]} receiveShadow>
-        <boxGeometry args={[L + 0.6, 0.2, W + 0.6]} />
+        <boxGeometry args={[L + 0.5, 0.2, W + 0.5]} />
         <meshStandardMaterial color="#334155" roughness={0.9} wireframe={wireframe} />
       </mesh>
 
-      {/* ── Main Living Envelope (Walls) ── */}
+      {/* ── Main Living Envelope ── */}
       <group position={[0, 0.2, 0]}>
         {/* North Wall (-Z) */}
         <mesh position={[0, H_wall / 2, -W / 2]} castShadow receiveShadow>
-          <boxGeometry args={[L, H_wall, 0.25]} />
+          <boxGeometry args={[L, H_wall, T_wall]} />
           <meshStandardMaterial
             color={baseWallColor}
             emissive={emissiveColor}
             emissiveIntensity={emissiveIntensity}
-            roughness={0.8}
+            roughness={0.85}
             wireframe={wireframe}
           />
         </mesh>
 
-        {/* South Wall (+Z) with Glazing Cutout */}
+        {/* ── South Wall (+Z) with Deep-Set Window ── */}
         <group position={[0, 0, W / 2]}>
-          {/* Wall header above window */}
-          <mesh position={[0, H_wall - (H_wall - windowHeight - 0.5) / 2, 0]} castShadow receiveShadow>
-            <boxGeometry args={[L, H_wall - windowHeight - 0.5, 0.25]} />
+          {/* Left wall segment flanking window */}
+          <mesh
+            position={[-(L / 2 - (L - windowWidth) / 4), H_wall / 2, 0]}
+            castShadow
+            receiveShadow
+          >
+            <boxGeometry args={[(L - windowWidth) / 2, H_wall, T_wall]} />
             <meshStandardMaterial
               color={baseWallColor}
               emissive={emissiveColor}
               emissiveIntensity={emissiveIntensity}
-              roughness={0.8}
+              roughness={0.85}
+              wireframe={wireframe}
+            />
+          </mesh>
+
+          {/* Right wall segment flanking window */}
+          <mesh
+            position={[L / 2 - (L - windowWidth) / 4, H_wall / 2, 0]}
+            castShadow
+            receiveShadow
+          >
+            <boxGeometry args={[(L - windowWidth) / 2, H_wall, T_wall]} />
+            <meshStandardMaterial
+              color={baseWallColor}
+              emissive={emissiveColor}
+              emissiveIntensity={emissiveIntensity}
+              roughness={0.85}
+              wireframe={wireframe}
+            />
+          </mesh>
+
+          {/* Wall header above window */}
+          <mesh
+            position={[0, sillHeight + windowHeight + headerHeight / 2, 0]}
+            castShadow
+            receiveShadow
+          >
+            <boxGeometry args={[windowWidth, headerHeight, T_wall]} />
+            <meshStandardMaterial
+              color={baseWallColor}
+              emissive={emissiveColor}
+              emissiveIntensity={emissiveIntensity}
+              roughness={0.85}
               wireframe={wireframe}
             />
           </mesh>
 
           {/* Wall sill below window */}
-          <mesh position={[0, 0.25, 0]} castShadow receiveShadow>
-            <boxGeometry args={[L, 0.5, 0.25]} />
+          <mesh position={[0, sillHeight / 2, 0]} castShadow receiveShadow>
+            <boxGeometry args={[windowWidth, sillHeight, T_wall]} />
             <meshStandardMaterial
               color={baseWallColor}
               emissive={emissiveColor}
               emissiveIntensity={emissiveIntensity}
-              roughness={0.8}
+              roughness={0.85}
               wireframe={wireframe}
             />
           </mesh>
 
-          {/* Wall sides flanking window */}
-          <mesh
-            position={[-(L / 2 - (L - windowWidth) / 4), 0.5 + windowHeight / 2, 0]}
-            castShadow
-            receiveShadow
-          >
-            <boxGeometry args={[(L - windowWidth) / 2, windowHeight, 0.25]} />
-            <meshStandardMaterial
-              color={baseWallColor}
-              emissive={emissiveColor}
-              emissiveIntensity={emissiveIntensity}
-              roughness={0.8}
-              wireframe={wireframe}
-            />
-          </mesh>
-          <mesh
-            position={[L / 2 - (L - windowWidth) / 4, 0.5 + windowHeight / 2, 0]}
-            castShadow
-            receiveShadow
-          >
-            <boxGeometry args={[(L - windowWidth) / 2, windowHeight, 0.25]} />
-            <meshStandardMaterial
-              color={baseWallColor}
-              emissive={emissiveColor}
-              emissiveIntensity={emissiveIntensity}
-              roughness={0.8}
-              wireframe={wireframe}
-            />
+          {/* ── Vernacular Deep-Set Window Detailing ── */}
+          {/* Heavy timber lintel beam above window */}
+          <mesh position={[0, sillHeight + windowHeight + 0.08, T_wall / 2 + 0.02]} castShadow>
+            <boxGeometry args={[windowWidth + 0.3, 0.12, 0.12]} />
+            <meshStandardMaterial color="#452b14" roughness={0.85} />
           </mesh>
 
-          {/* South Glazing Pane (Glass) */}
-          <mesh position={[0, 0.5 + windowHeight / 2, 0]} castShadow>
-            <boxGeometry args={[windowWidth, windowHeight, 0.08]} />
+          {/* Timber sill beam below window */}
+          <mesh position={[0, sillHeight - 0.04, T_wall / 2 + 0.02]} castShadow>
+            <boxGeometry args={[windowWidth + 0.2, 0.08, 0.10]} />
+            <meshStandardMaterial color="#452b14" roughness={0.85} />
+          </mesh>
+
+          {/* Recessed Glass Pane (Deep set inside the 35cm wall reveal) */}
+          <mesh position={[0, sillHeight + windowHeight / 2, -0.05]} castShadow>
+            <boxGeometry args={[windowWidth - 0.08, windowHeight - 0.08, 0.04]} />
             <meshPhysicalMaterial
               color="#38bdf8"
               transmission={0.85}
-              opacity={0.7}
+              opacity={0.75}
               transparent
               roughness={0.08}
               ior={1.52}
@@ -175,128 +207,214 @@ export function ShelterMesh({
             />
           </mesh>
 
-          {/* Window Timber/Aluminium Framing Grid */}
-          <mesh position={[0, 0.5 + windowHeight / 2, 0.06]}>
-            <boxGeometry args={[windowWidth + 0.06, 0.05, 0.05]} />
-            <meshStandardMaterial color="#1e293b" />
-          </mesh>
-          <mesh position={[0, 0.5 + windowHeight / 2, 0.06]}>
-            <boxGeometry args={[0.05, windowHeight + 0.06, 0.05]} />
-            <meshStandardMaterial color="#1e293b" />
+          {/* Recessed Wooden Frame */}
+          <mesh position={[0, sillHeight + windowHeight / 2, -0.05]}>
+            <boxGeometry args={[windowWidth, windowHeight, 0.06]} />
+            <meshStandardMaterial color="#301d0f" roughness={0.8} wireframe={wireframe} />
           </mesh>
         </group>
 
-        {/* East Wall (+X) with Entrance Door */}
+        {/* ── East Wall (+X) with Muted Timber Door ── */}
         <group position={[L / 2, 0, 0]}>
-          {/* Main wall body */}
-          <mesh position={[0, H_wall / 2, 0]} castShadow receiveShadow>
-            <boxGeometry args={[0.25, H_wall, W]} />
+          {/* Wall section flanking door (North side) */}
+          <mesh
+            position={[0, H_wall / 2, -(W / 2 - (W - doorW) / 4)]}
+            castShadow
+            receiveShadow
+          >
+            <boxGeometry args={[T_wall, H_wall, (W - doorW) / 2]} />
             <meshStandardMaterial
               color={baseWallColor}
               emissive={emissiveColor}
               emissiveIntensity={emissiveIntensity}
-              roughness={0.8}
+              roughness={0.85}
               wireframe={wireframe}
             />
           </mesh>
 
-          {/* Timber Entry Door */}
-          <mesh position={[0.13, doorH / 2, 0]} castShadow>
-            <boxGeometry args={[0.05, doorH, doorW]} />
-            <meshStandardMaterial color="#451a03" roughness={0.7} />
+          {/* Wall section flanking door (South side) */}
+          <mesh
+            position={[0, H_wall / 2, W / 2 - (W - doorW) / 4]}
+            castShadow
+            receiveShadow
+          >
+            <boxGeometry args={[T_wall, H_wall, (W - doorW) / 2]} />
+            <meshStandardMaterial
+              color={baseWallColor}
+              emissive={emissiveColor}
+              emissiveIntensity={emissiveIntensity}
+              roughness={0.85}
+              wireframe={wireframe}
+            />
+          </mesh>
+
+          {/* Wall header above door */}
+          <mesh
+            position={[0, doorH + (H_wall - doorH) / 2, 0]}
+            castShadow
+            receiveShadow
+          >
+            <boxGeometry args={[T_wall, H_wall - doorH, doorW]} />
+            <meshStandardMaterial
+              color={baseWallColor}
+              emissive={emissiveColor}
+              emissiveIntensity={emissiveIntensity}
+              roughness={0.85}
+              wireframe={wireframe}
+            />
+          </mesh>
+
+          {/* Heavy timber door lintel */}
+          <mesh position={[T_wall / 2 + 0.02, doorH + 0.06, 0]} castShadow>
+            <boxGeometry args={[0.12, 0.12, doorW + 0.25]} />
+            <meshStandardMaterial color="#452b14" roughness={0.85} />
+          </mesh>
+
+          {/* Simple Wooden Door (Muted Brown) */}
+          <mesh position={[0.02, doorH / 2, 0]} castShadow>
+            <boxGeometry args={[0.06, doorH, doorW - 0.05]} />
+            <meshStandardMaterial color="#54371e" roughness={0.75} />
+          </mesh>
+
+          {/* Door Frame & Rustic Handle */}
+          <mesh position={[0.06, 0.95, 0.25]}>
+            <boxGeometry args={[0.04, 0.14, 0.03]} />
+            <meshStandardMaterial color="#1e293b" metalness={0.8} roughness={0.4} />
           </mesh>
         </group>
 
-        {/* West Wall (-X) */}
+        {/* ── West Wall (-X) ── */}
         <mesh position={[-L / 2, H_wall / 2, 0]} castShadow receiveShadow>
-          <boxGeometry args={[0.25, H_wall, W]} />
+          <boxGeometry args={[T_wall, H_wall, W]} />
           <meshStandardMaterial
             color={baseWallColor}
             emissive={emissiveColor}
             emissiveIntensity={emissiveIntensity}
-            roughness={0.8}
+            roughness={0.85}
             wireframe={wireframe}
           />
         </mesh>
 
-        {/* East & West Gable End Triangles */}
-        <GableEnd
-          position={[L / 2, H_wall, 0]}
-          width={W}
-          height={H_roof}
-          color={baseWallColor}
-          emissive={emissiveColor}
-          emissiveIntensity={emissiveIntensity}
-          wireframe={wireframe}
-        />
-        <GableEnd
-          position={[-L / 2, H_wall, 0]}
-          width={W}
-          height={H_roof}
-          color={baseWallColor}
-          emissive={emissiveColor}
-          emissiveIntensity={emissiveIntensity}
-          wireframe={wireframe}
-          flip
-        />
+        {/* ── Protruding Horizontal Timber Beam-Ends ("Taluk" Joist Ends) ── */}
+        {joistPositions.map((posX, idx) => (
+          <group key={`joists-${idx}`}>
+            {/* North protrusion */}
+            <mesh
+              position={[posX, H_wall - 0.12, -W / 2 - T_wall / 2 - 0.05]}
+              castShadow
+            >
+              <boxGeometry args={[0.09, 0.09, 0.14]} />
+              <meshStandardMaterial color="#452b14" roughness={0.9} />
+            </mesh>
+            {/* South protrusion */}
+            <mesh
+              position={[posX, H_wall - 0.12, W / 2 + T_wall / 2 + 0.05]}
+              castShadow
+            >
+              <boxGeometry args={[0.09, 0.09, 0.14]} />
+              <meshStandardMaterial color="#452b14" roughness={0.9} />
+            </mesh>
+          </group>
+        ))}
 
-        {/* ── Gable Roof Slopes (North & South) ── */}
-        {/* South Pitch */}
+        {/* ── Ladakhi Flat Roof with Parapet ── */}
+        {/* Main Flat Roof Slab */}
+        <mesh position={[0, H_wall + 0.06, 0]} castShadow receiveShadow>
+          <boxGeometry args={[L + 0.35, 0.12, W + 0.35]} />
+          <meshStandardMaterial
+            color="#94A3B8"
+            emissive={emissiveColor}
+            emissiveIntensity={emissiveIntensity * 0.7}
+            roughness={0.5}
+            wireframe={wireframe}
+          />
+        </mesh>
+
+        {/* Parapet Walls (Enclosing the flat roof) */}
+        {/* North Parapet */}
         <mesh
-          position={[0, H_wall + H_roof / 2, W / 4]}
-          rotation={[roofPitchAngle, 0, 0]}
+          position={[0, H_wall + 0.27, -W / 2 - 0.1]}
           castShadow
           receiveShadow
         >
-          <boxGeometry args={[roofOverhangX, 0.12, slopeLength]} />
+          <boxGeometry args={[L + 0.35, 0.30, 0.14]} />
           <meshStandardMaterial
-            color="#1e293b"
+            color={baseWallColor}
             emissive={emissiveColor}
-            emissiveIntensity={emissiveIntensity * 0.6}
-            roughness={0.5}
-            metalness={0.3}
+            emissiveIntensity={emissiveIntensity}
+            roughness={0.85}
             wireframe={wireframe}
           />
         </mesh>
 
-        {/* North Pitch */}
+        {/* South Parapet */}
         <mesh
-          position={[0, H_wall + H_roof / 2, -W / 4]}
-          rotation={[-roofPitchAngle, 0, 0]}
+          position={[0, H_wall + 0.27, W / 2 + 0.1]}
           castShadow
           receiveShadow
         >
-          <boxGeometry args={[roofOverhangX, 0.12, slopeLength]} />
+          <boxGeometry args={[L + 0.35, 0.30, 0.14]} />
           <meshStandardMaterial
-            color="#1e293b"
+            color={baseWallColor}
             emissive={emissiveColor}
-            emissiveIntensity={emissiveIntensity * 0.6}
-            roughness={0.5}
-            metalness={0.3}
+            emissiveIntensity={emissiveIntensity}
+            roughness={0.85}
             wireframe={wireframe}
           />
         </mesh>
 
-        {/* Roof Ridge Cap Beam */}
-        <mesh position={[0, H_wall + H_roof + 0.06, 0]} castShadow>
-          <boxGeometry args={[roofOverhangX + 0.1, 0.08, 0.2]} />
-          <meshStandardMaterial color="#0f172a" roughness={0.4} />
+        {/* East Parapet */}
+        <mesh
+          position={[L / 2 + 0.1, H_wall + 0.27, 0]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[0.14, 0.30, W + 0.06]} />
+          <meshStandardMaterial
+            color={baseWallColor}
+            emissive={emissiveColor}
+            emissiveIntensity={emissiveIntensity}
+            roughness={0.85}
+            wireframe={wireframe}
+          />
+        </mesh>
+
+        {/* West Parapet */}
+        <mesh
+          position={[-L / 2 - 0.1, H_wall + 0.27, 0]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[0.14, 0.30, W + 0.06]} />
+          <meshStandardMaterial
+            color={baseWallColor}
+            emissive={emissiveColor}
+            emissiveIntensity={emissiveIntensity}
+            roughness={0.85}
+            wireframe={wireframe}
+          />
+        </mesh>
+
+        {/* Parapet Top Coping Cap (Himalayan slate/timber rim) */}
+        <mesh position={[0, H_wall + 0.43, 0]}>
+          <boxGeometry args={[L + 0.4, 0.03, W + 0.4]} />
+          <meshStandardMaterial color="#475569" roughness={0.6} />
         </mesh>
 
         {/* ── Interior Warm Hearth / Occupancy Glow ── */}
         {/* Visible through south window at night/evening */}
         <pointLight
           position={[0, 1.2, 0]}
-          intensity={0.8 + currentPoint.indoor_temp_c * 0.05}
-          distance={6}
+          intensity={1.5 + currentPoint.indoor_temp_c * 0.05}
+          distance={8}
           color="#fef08a"
         />
 
         {/* ── Thermal Loss Radiation Halo ── */}
         {showThermalHeatmap && (
           <group ref={pulseRef}>
-            <mesh position={[0, H_wall / 2, 0]}>
-              <boxGeometry args={[L + 0.4, H_wall + 0.4, W + 0.4]} />
+            <mesh position={[0, (H_wall + 0.4) / 2, 0]}>
+              <boxGeometry args={[L + 0.5, H_wall + 0.6, W + 0.5]} />
               <meshBasicMaterial
                 color={emissiveColor}
                 transparent
@@ -308,59 +426,5 @@ export function ShelterMesh({
         )}
       </group>
     </group>
-  );
-}
-
-/** Helper component to construct triangular gable walls at the ends. */
-function GableEnd({
-  position,
-  width,
-  height,
-  color,
-  emissive,
-  emissiveIntensity,
-  wireframe,
-  flip = false,
-}: {
-  position: [number, number, number];
-  width: number;
-  height: number;
-  color: string;
-  emissive: string;
-  emissiveIntensity: number;
-  wireframe: boolean;
-  flip?: boolean;
-}) {
-  const geom = useMemo(() => {
-    const shape = new THREE.Shape();
-    // Triangle from (-W/2, 0) to (0, H_roof) to (W/2, 0)
-    shape.moveTo(-width / 2, 0);
-    shape.lineTo(width / 2, 0);
-    shape.lineTo(0, height);
-    shape.closePath();
-
-    const extrudeSettings = {
-      depth: 0.25,
-      bevelEnabled: false,
-    };
-    return new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  }, [width, height]);
-
-  return (
-    <mesh
-      geometry={geom}
-      position={[position[0] - (flip ? 0 : 0.25), position[1], position[2]]}
-      rotation={[0, flip ? -Math.PI / 2 : Math.PI / 2, 0]}
-      castShadow
-      receiveShadow
-    >
-      <meshStandardMaterial
-        color={color}
-        emissive={emissive}
-        emissiveIntensity={emissiveIntensity}
-        roughness={0.8}
-        wireframe={wireframe}
-      />
-    </mesh>
   );
 }
