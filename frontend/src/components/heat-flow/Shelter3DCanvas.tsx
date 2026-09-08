@@ -170,6 +170,10 @@ export function Shelter3DCanvas({
         </div>
       </div>
 
+      <div className="absolute left-3 top-14 z-10 rounded-none border border-border bg-card/85 px-2.5 py-1 text-[10px] font-mono text-muted-foreground backdrop-blur-sm">
+        Roof finish: separate slate/timber-style finish
+      </div>
+
       {/* ── Orientation Guide (Compass) ── */}
       <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2 rounded-none border border-border bg-card/90 px-2.5 py-1 text-[11px] font-mono text-muted-foreground backdrop-blur-sm">
         <span className="text-[#4A6D88] font-bold">▲ North (-Z)</span>

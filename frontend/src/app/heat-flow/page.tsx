@@ -172,38 +172,97 @@ export default function HeatFlowPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* ── Top Navigation Bar ── */}
-      <header className="sticky top-12 z-30 border-b border-border bg-background/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="flex items-center gap-1.5 rounded-none border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <ArrowLeft size={13} />
-              <span>Back to Home</span>
-            </Link>
-            <div className="hidden h-4 w-[1px] bg-border sm:block" />
+    <main className="min-h-screen bg-background text-foreground selection:bg-accent selection:text-white">
+      <div className="mx-auto w-full max-w-[1550px] px-4 py-8 sm:px-8 lg:px-12">
+        {/* Navigation & Grand Header */}
+        <div className="mb-8">
+          <Link
+            href="/"
+            className="mb-3 inline-flex items-center gap-2 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            BACK TO OVERVIEW
+          </Link>
+
+          <div className="flex flex-col justify-between gap-4 border-b border-border/70 pb-6 lg:flex-row lg:items-end">
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-sm font-bold tracking-tight text-foreground sm:text-base">
-                  Heat Flow &amp; 3D Shelter Visualizer
-                </h1>
-                <Badge variant="default" className="border border-accent/40 text-accent text-[10px]">
-                  Climate performance
-                </Badge>
+                <span className="font-mono text-[11px] font-semibold tracking-widest text-accent uppercase">
+                  ◆ WORKSPACE 04 · ENVELOPE DYNAMICS &amp; 3D CONDUCTION ◆
+                </span>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                Building envelope conduction ($Q = U \cdot A \cdot \Delta T$) &amp; real-sun tracking
+              <h1 className="mt-1 font-cinzel text-3xl font-bold tracking-wide text-foreground sm:text-4xl lg:text-5xl">
+                Heat Flow &amp; 3D Shelter Visualizer
+              </h1>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+                Building envelope conduction ($Q = U \cdot A \cdot \Delta T$) and real-sun diurnal tracking across vernacular building envelopes.
               </p>
             </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="input" className="font-mono text-xs">
+                LADAKH REGION · 3,500m
+              </Badge>
+              <Badge variant="output" className="font-mono text-xs">
+                SOLAR DIURNAL TRACKING
+              </Badge>
+              <Badge variant="default" className="border border-border font-mono text-xs">
+                REAL TIME PHYSICS
+              </Badge>
+            </div>
           </div>
-
         </div>
-      </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        {/* Presets Strip */}
+        <div className="mb-8 rounded-none border border-border bg-card/60 p-4 backdrop-blur-sm">
+          <div className="mb-2.5 flex items-center justify-between">
+            <span className="font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              ⚡ High-Altitude Ladakh Reference Presets (Instant Auto-Fill)
+            </span>
+            <span className="hidden text-[11px] text-muted-foreground sm:inline">
+              Quickly load climatic parameters &amp; envelope materials
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {PRESET_OPTIONS.map((p) => {
+              const isSelected = params.wall_material === p.material && params.latitude === p.lat
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    const next: HeatFlowRequest = {
+                      ...params,
+                      latitude: p.lat,
+                      longitude: p.lon,
+                      wall_material: p.material,
+                      wall_thickness_cm: p.thickness,
+                      insulation_r_value: p.rValue,
+                      glazing_ratio: p.glazing,
+                      volume_m3: p.volume,
+                      ambient_temp_c: p.ambient,
+                    }
+                    setParams(next)
+                    fetchHeatFlow(next)
+                  }}
+                  className={`flex flex-col rounded-none border p-2.5 text-left transition-all ${
+                    isSelected
+                      ? "border-accent bg-accent/15 text-foreground shadow-sm"
+                      : "border-border bg-muted/20 text-muted-foreground hover:border-accent/60 hover:bg-muted/50 hover:text-foreground"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground">{p.name}</span>
+                    <span className="font-mono text-[10px] text-accent">{p.material}</span>
+                  </div>
+                  <span className="mt-1 font-mono text-[10px] text-muted-foreground">
+                    {p.subtitle} · {p.ambient}°C
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
         {/* ── Summary KPI Banner ── */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-none border border-[#A63D2F]/30 bg-card p-4 shadow-sm">
@@ -546,7 +605,7 @@ export default function HeatFlowPage() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

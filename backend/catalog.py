@@ -1,19 +1,16 @@
-# Source: UT Ladakh Public Works (R&B) LSoR 2024 (effective 2024-08-01),
-# Ch. 32 vernacular materials and Ch. 5/7 conventional materials, cross-checked
-# with CPWD Delhi Schedule of Rates 2023 where Ladakh-specific items are absent.
-# Midpoints of the cited ranges, in ₹/m³: RCC 8,250; stone 5,250;
-# mud/adobe brick 3,000; rammed earth 2,000.
-MATERIAL_COSTS_INR_PER_M3 = {
-    "Concrete": 8250,
-    "Stone": 5250,
-    "Mud_Brick": 3000,
-    "Rammed_Earth": 2000,
-}
-
 try:
-    from services.envelope_physics import MATERIAL_CONDUCTIVITY
+    from services.envelope_physics import (
+        MATERIAL_CONDUCTIVITY,
+        MATERIAL_COSTS_INR_PER_M3,
+        MATERIAL_COST_RANGES_INR_PER_M3,
+    )
 except ImportError:
-    from backend.services.envelope_physics import MATERIAL_CONDUCTIVITY
+    from backend.services.envelope_physics import (
+        MATERIAL_CONDUCTIVITY,
+        MATERIAL_COSTS_INR_PER_M3,
+        MATERIAL_COST_RANGES_INR_PER_M3,
+    )
+
 
 MATERIALS = {
     mat: {

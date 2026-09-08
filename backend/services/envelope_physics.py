@@ -14,6 +14,50 @@ MATERIAL_CONDUCTIVITY = {
     "Stone": 1.8,
 }
 
+# Volumetric thermal heat capacity / thermal mass in MJ/(m³·K)
+MATERIAL_THERMAL_MASS = {
+    "Concrete": 2.0,
+    "Mud_Brick": 1.6,
+    "Rammed_Earth": 1.9,
+    "Stone": 2.2,
+}
+
+# Source: UT Ladakh Public Works (R&B) LSoR 2024 (effective 2024-08-01),
+# Ch. 32 vernacular materials and Ch. 5/7 conventional materials, cross-checked
+# with CPWD Delhi Schedule of Rates 2023 where Ladakh-specific items are absent.
+# Cost ranges and midpoints in ₹/m³:
+MATERIAL_COST_RANGES_INR_PER_M3 = {
+    "Concrete": {
+        "min": 7500,
+        "max": 9000,
+        "midpoint": 8250,
+        "range_str": "₹7,500 – ₹9,000/m³",
+    },
+    "Mud_Brick": {
+        "min": 2500,
+        "max": 3500,
+        "midpoint": 3000,
+        "range_str": "₹2,500 – ₹3,500/m³",
+    },
+    "Rammed_Earth": {
+        "min": 1600,
+        "max": 2400,
+        "midpoint": 2000,
+        "range_str": "₹1,600 – ₹2,400/m³",
+    },
+    "Stone": {
+        "min": 4500,
+        "max": 6000,
+        "midpoint": 5250,
+        "range_str": "₹4,500 – ₹6,000/m³",
+    },
+}
+
+MATERIAL_COSTS_INR_PER_M3 = {
+    mat: data["midpoint"] for mat, data in MATERIAL_COST_RANGES_INR_PER_M3.items()
+}
+
+
 
 @dataclass(frozen=True)
 class EnvelopeUValues:

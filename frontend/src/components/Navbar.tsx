@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Compass } from "lucide-react";
+import { Menu, X } from "lucide-react";
 
 interface NavItem {
   name: string;
@@ -29,21 +29,10 @@ export function Navbar() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-md">
-      <div className="mx-auto flex h-12 max-w-7xl items-center justify-between px-4 sm:px-6">
-        {/* Brand / Logo */}
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-sm font-bold tracking-tight text-foreground transition-colors hover:text-accent"
-        >
-          <span className="flex h-7 w-7 items-center justify-center border border-border bg-card text-accent">
-            <Compass size={16} />
-          </span>
-          <span className="font-sans font-bold">Thermaform</span>
-        </Link>
-
-        {/* Desktop Nav Items */}
-        <div className="hidden items-center gap-1 md:flex">
+    <nav className="sticky top-0 z-50 w-full border-b border-border/80 bg-[#F4EFE6]/92 backdrop-blur-md">
+      <div className="mx-auto flex h-14 w-full max-w-[1550px] items-center justify-center px-4 sm:px-8">
+        {/* Desktop Nav Items: Centered with No Logo */}
+        <div className="hidden items-center gap-1.5 rounded-full border border-border/90 bg-[#FCFAF6]/95 px-3 py-1.5 shadow-md shadow-[#9C7F6A]/10 backdrop-blur-md md:flex">
           {NAV_ITEMS.map((item) => {
             const isActive =
               item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -51,10 +40,10 @@ export function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative px-3 py-1.5 text-xs font-medium transition-all ${
+                className={`relative rounded-full px-4 py-1.5 text-xs font-medium tracking-wide transition-all duration-200 ${
                   isActive
-                    ? "border-b-2 border-accent text-accent font-semibold bg-accent/5"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    ? "bg-accent text-white font-semibold shadow-sm shadow-accent/40"
+                    : "text-muted-foreground hover:bg-black/5 hover:text-foreground"
                 }`}
               >
                 {item.name}
@@ -63,12 +52,18 @@ export function Navbar() {
           })}
         </div>
 
-        {/* Mobile Hamburger Toggle */}
-        <div className="flex items-center md:hidden">
+        {/* Mobile View: Centered Nav Toggle */}
+        <div className="flex w-full items-center justify-between md:hidden">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+            <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+              Workspaces
+            </span>
+          </div>
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="flex h-8 w-8 items-center justify-center border border-border bg-card text-foreground transition-colors hover:bg-muted"
+            className="flex h-8 w-8 items-center justify-center rounded-none border border-border bg-card text-foreground transition-colors hover:bg-muted"
             aria-label="Toggle Navigation Menu"
             aria-expanded={mobileMenuOpen}
           >
@@ -79,7 +74,7 @@ export function Navbar() {
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="border-b border-border bg-background px-4 py-2 md:hidden">
+        <div className="border-b border-border bg-[#F4EFE6]/98 px-4 py-3 backdrop-blur-xl md:hidden">
           <div className="flex flex-col space-y-1">
             {NAV_ITEMS.map((item) => {
               const isActive =
@@ -89,15 +84,15 @@ export function Navbar() {
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between border-l-2 px-3 py-2 text-xs font-medium transition-colors ${
+                  className={`flex items-center justify-between rounded-none px-3 py-2 text-xs font-medium transition-colors ${
                     isActive
-                      ? "border-accent bg-accent/10 font-semibold text-accent"
-                      : "border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                      ? "border-l-2 border-accent bg-accent/15 font-semibold text-accent"
+                      : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   }`}
                 >
                   <span>{item.name}</span>
                   {isActive && (
-                    <span className="font-mono text-[10px] text-accent">ACTIVE</span>
+                    <span className="font-mono text-[10px] text-accent font-bold">ACTIVE</span>
                   )}
                 </Link>
               );

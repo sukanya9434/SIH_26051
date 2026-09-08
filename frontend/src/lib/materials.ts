@@ -26,28 +26,28 @@ export const WALL_MATERIALS: Record<WallMaterial, WallMaterialDefinition> = {
     name: "Concrete",
     displayName: "Concrete",
     k: 1.4,
-    baseColor: "#CBD5E1", // Bright architectural concrete light mist
+    baseColor: "#98A2B3", // Neutral architectural cast concrete slate gray
     description: "Conventional reinforced / cast concrete",
   },
   Mud_Brick: {
     name: "Mud_Brick",
     displayName: "Mud Brick",
     k: 0.6,
-    baseColor: "#E2DCD5", // Bright whitewashed adobe lime-plaster
+    baseColor: "#C28B4E", // Authentic Ladakhi sun-dried adobe mud brick earthy tan/ochre
     description: "Sun-dried adobe mud brick masonry",
   },
   Rammed_Earth: {
     name: "Rammed_Earth",
     displayName: "Rammed Earth",
     k: 0.9,
-    baseColor: "#EDE4D8", // Bright warm limestone cream (vernacular default)
+    baseColor: "#9E5336", // Rich warm compacted clay loam / terracotta earth
     description: "Compacted subsoil earthen wall construction",
   },
   Stone: {
     name: "Stone",
     displayName: "Stone",
     k: 1.8,
-    baseColor: "#D4D8DD", // Bright Himalayan granite / silver stone
+    baseColor: "#505E70", // Himalayan rough-hewn granite / cool mountain slate
     description: "Traditional Ladakhi rough-hewn stone masonry",
   },
 };

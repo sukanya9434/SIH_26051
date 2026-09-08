@@ -152,6 +152,8 @@ function DashboardContent() {
 
     const pdf = new jsPDF()
     const pageWidth = pdf.internal.pageSize.getWidth()
+    const baseline = result.baseline
+    const shelterArea = baseline.design?.area_m2 || design.area_m2 || 85
 
     // Top Header Banner - Burnt Terracotta
     pdf.setFillColor(182, 92, 56) // #B65C38
@@ -166,7 +168,7 @@ function DashboardContent() {
     pdf.setFontSize(8)
     pdf.setTextColor(246, 241, 231) // Warm cream subtext
     pdf.text(
-      "Thermaform · Thermal performance evaluation report",
+      "High-Altitude Passive Shelter Thermal Performance & Optimization Report",
       14,
       21
     )
@@ -190,7 +192,7 @@ function DashboardContent() {
 
     pdf.text(`Shelter Material: ${design.material.toUpperCase()}`, 110, 50)
     pdf.text(`Insulation Thickness: ${design.insulation_mm} mm`, 110, 57)
-    pdf.text(`Glazing Specification: ${design.glazing.toUpperCase()} | Area: ${design.area_m2} m²`, 110, 64)
+    pdf.text(`Glazing Specification: ${design.glazing.toUpperCase()} | Area: ${shelterArea} m²`, 110, 64)
 
     // Thermal & Economic Performance Section
     pdf.setFont("helvetica", "bold")
@@ -198,63 +200,85 @@ function DashboardContent() {
     pdf.setTextColor(43, 38, 34)
     pdf.text("2. THERMAL PERFORMANCE & CAPITAL EXPENDITURE", 14, 82)
 
-    const baseline = result.baseline
     const statsY = 88
     const cardWidth = (pageWidth - 28 - 9) / 4
+    const baselineCostM2 = Math.round(baseline.cost.estimated_install_cost / shelterArea)
 
     const statsData = [
-      { label: "Min Indoor Temp", value: `${baseline.comfort.minimum_indoor_c}°C` },
-      { label: `Hours < ${COMFORT_LOWER_BOUND_C.toFixed(1)}°C Target`, value: `${baseline.comfort.hours_below_target} / 24h` },
-      { label: "Daily Heating", value: `${baseline.thermal_energy.daily_heating_kwh} kWh` },
-      { label: "Capital Install Cost", value: `₹${baseline.cost.estimated_install_cost.toLocaleString()}` },
+      {
+        label: "Min Indoor Temp",
+        value: `${baseline.comfort.minimum_indoor_c}°C`,
+        subtext: `Target: ${COMFORT_LOWER_BOUND_C.toFixed(1)}°C`,
+      },
+      {
+        label: `Hours < ${COMFORT_LOWER_BOUND_C.toFixed(1)}°C Target`,
+        value: `${baseline.comfort.hours_below_target} / 24h`,
+        subtext: "Comfort deficit",
+      },
+      {
+        label: "Daily Heating",
+        value: `${baseline.thermal_energy.daily_heating_kwh} kWh`,
+        subtext: `~${Math.round(baseline.thermal_energy.daily_heating_kwh * 150).toLocaleString()} kWh/winter`,
+      },
+      {
+        label: "Capital Install Cost",
+        value: `Rs. ${baseline.cost.estimated_install_cost.toLocaleString()}`,
+        subtext: `Rs. ${baselineCostM2.toLocaleString()} / m² (${shelterArea} m²)`,
+      },
     ]
 
     statsData.forEach((stat, idx) => {
       const x = 14 + idx * (cardWidth + 3)
       pdf.setFillColor(250, 247, 242)
       pdf.setDrawColor(217, 208, 191)
-      pdf.rect(x, statsY, cardWidth, 22, "FD")
+      pdf.rect(x, statsY, cardWidth, 24, "FD")
 
       pdf.setFont("helvetica", "normal")
       pdf.setFontSize(7.5)
       pdf.setTextColor(104, 94, 85)
-      pdf.text(stat.label, x + 4, statsY + 7)
+      pdf.text(stat.label, x + 4, statsY + 6.5)
 
       pdf.setFont("helvetica", "bold")
-      pdf.setFontSize(11)
+      pdf.setFontSize(10.5)
       pdf.setTextColor(182, 92, 56) // Terracotta stat value
-      pdf.text(stat.value, x + 4, statsY + 16)
+      pdf.text(stat.value, x + 4, statsY + 14)
+
+      pdf.setFont("helvetica", "normal")
+      pdf.setFontSize(7)
+      pdf.setTextColor(104, 94, 85)
+      pdf.text(stat.subtext, x + 4, statsY + 20)
     })
 
     // NSGA-II Pareto Optimization Section
     pdf.setFont("helvetica", "bold")
     pdf.setFontSize(11)
     pdf.setTextColor(43, 38, 34)
-    pdf.text("3. NSGA-II MULTI-OBJECTIVE PARETO-OPTIMAL DESIGN FRONTIER", 14, 120)
+    pdf.text("3. NSGA-II MULTI-OBJECTIVE PARETO-OPTIMAL DESIGN FRONTIER", 14, 122)
 
     pdf.setFont("helvetica", "normal")
     pdf.setFontSize(8)
     pdf.setTextColor(104, 94, 85)
     pdf.text(
-      "Non-dominated trade-offs balancing minimum heating demand (kWh) versus capital construction cost (₹):",
+      "Non-dominated trade-offs balancing heating demand (kWh) vs. capital construction cost (Rs.):",
       14,
-      126
+      128
     )
 
     // Table Header
-    const tableY = 132
+    const tableY = 134
     pdf.setFillColor(235, 228, 213) // #EBE4D5 Warm Sand
     pdf.setDrawColor(217, 208, 191)
     pdf.rect(14, tableY, pageWidth - 28, 8, "FD")
     pdf.setFont("helvetica", "bold")
-    pdf.setFontSize(8)
+    pdf.setFontSize(7.5)
     pdf.setTextColor(43, 38, 34)
-    pdf.text("#", 18, tableY + 5.5)
-    pdf.text("Material", 32, tableY + 5.5)
-    pdf.text("Insulation", 75, tableY + 5.5)
-    pdf.text("Glazing", 110, tableY + 5.5)
-    pdf.text("Daily Heating (kWh)", 140, tableY + 5.5)
-    pdf.text("Install Cost (₹)", 175, tableY + 5.5)
+    pdf.text("#", 17, tableY + 5.5)
+    pdf.text("Material", 25, tableY + 5.5)
+    pdf.text("Insulation", 66, tableY + 5.5)
+    pdf.text("Glazing", 93, tableY + 5.5)
+    pdf.text("Daily Heat", 118, tableY + 5.5)
+    pdf.text("Total Cost (Rs.)", 144, tableY + 5.5)
+    pdf.text("Cost / m² (Rs.)", 172, tableY + 5.5)
 
     // Table Rows
     const rows = result.pareto_front.slice(0, 5)
@@ -264,15 +288,19 @@ function DashboardContent() {
         pdf.setFillColor(246, 241, 231) // Warm cream alternating row
         pdf.rect(14, y, pageWidth - 28, 8, "F")
       }
+      const pArea = p.design.area_m2 || shelterArea
+      const pCostM2 = Math.round(p.estimated_install_cost / pArea)
+
       pdf.setFont("helvetica", "normal")
-      pdf.setFontSize(8)
+      pdf.setFontSize(7.5)
       pdf.setTextColor(43, 38, 34)
-      pdf.text(String(idx + 1), 18, y + 5.5)
-      pdf.text(p.design.material.toUpperCase(), 32, y + 5.5)
-      pdf.text(`${p.design.insulation_mm} mm`, 75, y + 5.5)
-      pdf.text(p.design.glazing.toUpperCase(), 110, y + 5.5)
-      pdf.text(`${p.daily_heating_kwh} kWh`, 140, y + 5.5)
-      pdf.text(`₹${p.estimated_install_cost.toLocaleString()}`, 175, y + 5.5)
+      pdf.text(String(idx + 1), 17, y + 5.5)
+      pdf.text(p.design.material.replace("_", " ").toUpperCase(), 25, y + 5.5)
+      pdf.text(`${p.design.insulation_mm} mm`, 66, y + 5.5)
+      pdf.text(p.design.glazing.toUpperCase(), 93, y + 5.5)
+      pdf.text(`${p.daily_heating_kwh} kWh`, 118, y + 5.5)
+      pdf.text(`Rs. ${p.estimated_install_cost.toLocaleString()}`, 144, y + 5.5)
+      pdf.text(`Rs. ${pCostM2.toLocaleString()}/m²`, 172, y + 5.5)
     })
 
     // Footer Watermark
@@ -289,43 +317,93 @@ function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="border-b border-border bg-card/40">
-        <div className="mx-auto max-w-6xl px-6 py-6">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+    <div className="min-h-screen bg-background text-foreground selection:bg-accent selection:text-white">
+      <div className="mx-auto w-full max-w-[1550px] px-4 py-8 sm:px-8 lg:px-12">
+        {/* Navigation & Grand Header */}
+        <div className="mb-8">
+          <Link
+            href="/"
+            className="mb-3 inline-flex items-center gap-2 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            BACK TO OVERVIEW
+          </Link>
+
+          <div className="flex flex-col justify-between gap-4 border-b border-border/70 pb-6 lg:flex-row lg:items-end">
             <div>
-              <Link
-                href="/"
-                className="mb-2 inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <ArrowLeft className="h-3 w-3" />
-                OVERVIEW
-              </Link>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[11px] font-semibold tracking-widest text-accent uppercase">
+                  ◆ WORKSPACE 05 · PARETO OPTIMIZATION &amp; UNIFIED RESULTS ◆
+                </span>
+              </div>
+              <h1 className="mt-1 font-cinzel text-3xl font-bold tracking-wide text-foreground sm:text-4xl lg:text-5xl">
                 Unified Results &amp; Optimization Dashboard
               </h1>
-              <p className="mt-1 text-xs text-muted-foreground">
-                NSGA-II multi-objective optimization balancing thermal comfort, heating loads, and capital cost.
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+                NSGA-II multi-objective optimization balancing thermal comfort, heating loads, and capital construction costs across Ladakh microclimates.
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge variant="input" className="font-mono text-xs">
+                LADAKH REGION · 3,500m
+              </Badge>
+              <Badge variant="output" className="font-mono text-xs">
+                NSGA-II PARETO OPTIMAL
+              </Badge>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={exportPdfReport}
                 disabled={!result}
+                className="font-mono text-xs border-accent/40 text-foreground hover:border-accent hover:bg-accent/15"
               >
-                <Download className="mr-1.5 h-3.5 w-3.5" />
+                <Download className="mr-1.5 h-3.5 w-3.5 text-accent" />
                 Export Judge PDF Report
               </Button>
             </div>
           </div>
         </div>
-      </header>
 
-      <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
+        {/* Golden Presets Strip */}
+        <div className="mb-8 rounded-none border border-border bg-card/60 p-4 backdrop-blur-sm">
+          <div className="mb-2.5 flex items-center justify-between">
+            <span className="font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              ⚡ High-Altitude Ladakh Reference Presets (Instant Auto-Fill)
+            </span>
+            <span className="hidden text-[11px] text-muted-foreground sm:inline">
+              Select a location to instantly trigger multi-objective optimization
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+            {Object.keys(GOLDEN_PRESETS).map((key) => {
+              const p = GOLDEN_PRESETS[key]
+              const isSelected = activePreset === key
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => applyPreset(key)}
+                  className={`flex flex-col rounded-none border p-2.5 text-left transition-all ${
+                    isSelected
+                      ? "border-accent bg-accent/15 text-foreground shadow-sm"
+                      : "border-border bg-muted/20 text-muted-foreground hover:border-accent/60 hover:bg-muted/50 hover:text-foreground"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground">{p.name}</span>
+                    <span className="font-mono text-[10px] text-accent">{p.climate.ambient_temp_c}°C</span>
+                  </div>
+                  <span className="mt-1 font-mono text-[10px] text-muted-foreground">
+                    {p.coords.lat}°N, {p.coords.lon}°E · {p.climate.hot_air_index}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <main className="space-y-6">
         {/* Control Bar */}
         <Card className="rounded-none border-border bg-card p-4">
           <div className="flex flex-wrap items-end gap-3">
@@ -482,13 +560,16 @@ function DashboardContent() {
                 <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
                   ENVELOPE CAPITAL COST
                 </span>
-                <div className="mt-1 flex items-baseline gap-1">
+                <div className="mt-1 flex flex-wrap items-baseline gap-2">
                   <span className="data-value text-3xl font-bold text-accent">
                     ₹{result.baseline.cost.estimated_install_cost.toLocaleString()}
                   </span>
+                  <span className="font-mono text-sm font-semibold text-muted-foreground">
+                    (₹{Math.round(result.baseline.cost.estimated_install_cost / (result.baseline.design?.area_m2 || design.area_m2 || 85)).toLocaleString()} / m²)
+                  </span>
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  Materials, insulation &amp; glazing
+                  ₹{Math.round(result.baseline.cost.estimated_install_cost / (result.baseline.design?.area_m2 || design.area_m2 || 85)).toLocaleString()} per m² floor area · LSoR 2024 basis
                 </p>
               </Card>
             </section>
@@ -645,6 +726,7 @@ function DashboardContent() {
                       <th className="p-3">Glazing</th>
                       <th className="p-3">Daily Energy</th>
                       <th className="p-3">Est. Capital Cost</th>
+                      <th className="p-3">Unit Cost (/m²)</th>
                       <th className="p-3 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -664,6 +746,9 @@ function DashboardContent() {
                         </td>
                         <td className="p-3 font-mono text-accent">
                           ₹{point.estimated_install_cost.toLocaleString()}
+                        </td>
+                        <td className="p-3 font-mono text-muted-foreground">
+                          ₹{Math.round(point.estimated_install_cost / (point.design?.area_m2 || design.area_m2 || 85)).toLocaleString()} / m²
                         </td>
                         <td className="p-3 text-right space-x-2">
                           <Button
@@ -692,6 +777,7 @@ function DashboardContent() {
           </>
         )}
       </main>
+      </div>
     </div>
   )
 }

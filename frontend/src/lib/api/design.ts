@@ -1,4 +1,5 @@
 import { ApiError, type DesignPredictionRequest, type DesignPredictionResponse } from "@/lib/api"
+import type { WallMaterial } from "@/lib/materials"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:8000"
 
@@ -10,11 +11,13 @@ export type DesignResult = {
   wall_thickness_cm: number
   glazing_ratio: number
   insulation_r_value: number
-  /** Repository-documented cross-flow name when the design class has one. */
-  material_name?: "Mud_Brick" | "Rammed_Earth" | "Concrete" | null
+  /** Canonical wall material name conforming to the 4 trained materials. */
+  material_name?: WallMaterial | null
 }
 
-export const DESIGN_CLASS_TO_WALL_MATERIAL: Record<number, DesignResult["material_name"]> = {
+export const DESIGN_CLASS_TO_WALL_MATERIAL: Record<number, WallMaterial> = {
+  0: "Stone",
+  1: "Rammed_Earth",
   2: "Rammed_Earth",
   3: "Mud_Brick",
   4: "Concrete",

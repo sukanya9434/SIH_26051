@@ -48,6 +48,9 @@ export function ShelterMesh({
   // Wall base color mapped directly from canonical material definition
   const materialDef = useMemo(() => getWallMaterialDefinition(wallMaterial), [wallMaterial]);
   const baseWallColor = materialDef.baseColor;
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[ShelterMesh] wallMaterial="${wallMaterial}" -> canonical="${materialDef.name}", baseWallColor="${baseWallColor}"`);
+  }
 
   // Wall thermal emissive glow based on heat loss rate (Watts)
   const emissiveColor = useMemo(() => {
@@ -322,10 +325,10 @@ export function ShelterMesh({
         <mesh position={[0, H_wall + 0.06, 0]} castShadow receiveShadow>
           <boxGeometry args={[L + 0.35, 0.12, W + 0.35]} />
           <meshStandardMaterial
-            color="#94A3B8"
+            color="#5C4736"
             emissive={emissiveColor}
             emissiveIntensity={emissiveIntensity * 0.7}
-            roughness={0.5}
+            roughness={0.75}
             wireframe={wireframe}
           />
         </mesh>

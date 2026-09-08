@@ -26,6 +26,7 @@ try:
     from services.envelope_physics import (
         calculate_envelope_heat_loss_w,
         calculate_u_values as shared_calculate_u_values,
+        MATERIAL_THERMAL_MASS,
     )
 except ImportError:
     from backend.schemas.heat_flow import (
@@ -40,21 +41,12 @@ except ImportError:
     from backend.services.envelope_physics import (
         calculate_envelope_heat_loss_w,
         calculate_u_values as shared_calculate_u_values,
+        MATERIAL_THERMAL_MASS,
     )
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Heat Flow & 3D Visualization"])
-
-# ── Material Properties ──────────────────────────────────────────────
-# Conductivity in W/(m·K)
-# Thermal mass in MJ/(m3·K)
-MATERIAL_THERMAL_MASS: Dict[str, float] = {
-    "Stone": 2.2,
-    "Rammed_Earth": 1.9,
-    "Mud_Brick": 1.6,
-    "Concrete": 2.0,
-}
 
 
 def solve_shelter_geometry(volume_m3: float, glazing_ratio: float) -> ShelterGeometry:

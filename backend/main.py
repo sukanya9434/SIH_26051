@@ -17,14 +17,23 @@ load_dotenv()
 try:
     from routers import indoor_temp, design, thermal_energy, optimization, heat_flow
     from services import model_loader, climate
-    from catalog import MATERIALS, MATERIAL_COSTS_INR_PER_M3
-    from routers.heat_flow import MATERIAL_THERMAL_MASS
+    from services.envelope_physics import (
+        MATERIAL_CONDUCTIVITY,
+        MATERIAL_THERMAL_MASS,
+        MATERIAL_COSTS_INR_PER_M3,
+        MATERIAL_COST_RANGES_INR_PER_M3,
+    )
 except ImportError:
     from backend.routers import indoor_temp, design, thermal_energy, optimization, heat_flow
     from backend.services import model_loader
     from backend.services import climate
-    from backend.catalog import MATERIALS, MATERIAL_COSTS_INR_PER_M3
-    from backend.routers.heat_flow import MATERIAL_THERMAL_MASS
+    from backend.services.envelope_physics import (
+        MATERIAL_CONDUCTIVITY,
+        MATERIAL_THERMAL_MASS,
+        MATERIAL_COSTS_INR_PER_M3,
+        MATERIAL_COST_RANGES_INR_PER_M3,
+    )
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -99,7 +108,8 @@ def material_catalog():
     return {
         name: {
             "thermal_mass_MJ_m3K": MATERIAL_THERMAL_MASS[name],
-            "k_W_mK": MATERIALS[name]["u_value"],
+            "k_W_mK": MATERIAL_CONDUCTIVITY[name],
+            "lsor_cost_range": MATERIAL_COST_RANGES_INR_PER_M3[name]["range_str"],
             "lsor_cost_inr_m3": MATERIAL_COSTS_INR_PER_M3[name],
         }
         for name in ("Concrete", "Mud_Brick", "Rammed_Earth", "Stone")

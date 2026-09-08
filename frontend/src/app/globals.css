@@ -63,96 +63,96 @@
   --radius-4xl: 0.125rem;
 }
 
-/* Default to warm cream/beige vernacular architecture light palette */
+/* Sunlit Himalayan Sandstone & Warm Terracotta Palette (Bright, luminous architectural palette in harmony with landing page golden-hour sunlight) */
 :root {
-  --background: #F6F1E7;
-  --foreground: #2B2622;
-  --card: #FAF7F2;
-  --card-foreground: #2B2622;
-  --popover: #FAF7F2;
-  --popover-foreground: #2B2622;
-  --primary: #B65C38;
+  --background: #F4EFE6;
+  --foreground: #221C18;
+  --card: #FCFAF6;
+  --card-foreground: #221C18;
+  --popover: #FCFAF6;
+  --popover-foreground: #221C18;
+  --primary: #B85D36;
   --primary-foreground: #FFFFFF;
-  --secondary: #EFE8DD;
-  --secondary-foreground: #2B2622;
-  --muted: #EBE4D5;
-  --muted-foreground: #685E55;
+  --secondary: #EBE3D5;
+  --secondary-foreground: #221C18;
+  --muted: #EBE3D5;
+  --muted-foreground: #6B5D4F;
 
   /* Semantic tokens */
-  --accent: #B65C38;
+  --accent: #B85D36;
   --accent-foreground: #FFFFFF;
-  --success: #3F6B4E;
+  --success: #227042;
   --success-foreground: #FFFFFF;
-  --warning: #B87326;
+  --warning: #C2630A;
   --warning-foreground: #FFFFFF;
-  --danger: #A63D2F;
+  --danger: #C5221F;
   --danger-foreground: #FFFFFF;
 
-  --border: #D9D0BF;
-  --input: #D9D0BF;
-  --ring: #B65C38;
+  --border: #D8CABA;
+  --input: #FFFFFF;
+  --ring: #B85D36;
 
-  --chart-1: #B65C38;
-  --chart-2: #4A6D88;
-  --chart-3: #4D7C5D;
-  --chart-4: #B87326;
-  --chart-5: #7A5C4A;
+  --chart-1: #B85D36;
+  --chart-2: #3E6382;
+  --chart-3: #227042;
+  --chart-4: #C2630A;
+  --chart-5: #825E45;
 
   --radius: 0rem;
 
-  --sidebar: #FAF7F2;
-  --sidebar-foreground: #2B2622;
-  --sidebar-primary: #B65C38;
+  --sidebar: #FCFAF6;
+  --sidebar-foreground: #221C18;
+  --sidebar-primary: #B85D36;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #EFE8DD;
-  --sidebar-accent-foreground: #2B2622;
-  --sidebar-border: #D9D0BF;
-  --sidebar-ring: #B65C38;
+  --sidebar-accent: #EBE3D5;
+  --sidebar-accent-foreground: #221C18;
+  --sidebar-border: #D8CABA;
+  --sidebar-ring: #B85D36;
 }
 
 .dark {
-  --background: #F6F1E7;
-  --foreground: #2B2622;
-  --card: #FAF7F2;
-  --card-foreground: #2B2622;
-  --popover: #FAF7F2;
-  --popover-foreground: #2B2622;
-  --primary: #B65C38;
+  --background: #F4EFE6;
+  --foreground: #221C18;
+  --card: #FCFAF6;
+  --card-foreground: #221C18;
+  --popover: #FCFAF6;
+  --popover-foreground: #221C18;
+  --primary: #B85D36;
   --primary-foreground: #FFFFFF;
-  --secondary: #EFE8DD;
-  --secondary-foreground: #2B2622;
-  --muted: #EBE4D5;
-  --muted-foreground: #685E55;
+  --secondary: #EBE3D5;
+  --secondary-foreground: #221C18;
+  --muted: #EBE3D5;
+  --muted-foreground: #6B5D4F;
 
-  --accent: #B65C38;
+  --accent: #B85D36;
   --accent-foreground: #FFFFFF;
-  --success: #3F6B4E;
+  --success: #227042;
   --success-foreground: #FFFFFF;
-  --warning: #B87326;
+  --warning: #C2630A;
   --warning-foreground: #FFFFFF;
-  --danger: #A63D2F;
+  --danger: #C5221F;
   --danger-foreground: #FFFFFF;
 
-  --border: #D9D0BF;
-  --input: #D9D0BF;
-  --ring: #B65C38;
+  --border: #D8CABA;
+  --input: #FFFFFF;
+  --ring: #B85D36;
 
-  --chart-1: #B65C38;
-  --chart-2: #4A6D88;
-  --chart-3: #4D7C5D;
-  --chart-4: #B87326;
-  --chart-5: #7A5C4A;
+  --chart-1: #B85D36;
+  --chart-2: #3E6382;
+  --chart-3: #227042;
+  --chart-4: #C2630A;
+  --chart-5: #825E45;
 
   --radius: 0rem;
 
-  --sidebar: #FAF7F2;
-  --sidebar-foreground: #2B2622;
-  --sidebar-primary: #B65C38;
+  --sidebar: #FCFAF6;
+  --sidebar-foreground: #221C18;
+  --sidebar-primary: #B85D36;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #EFE8DD;
-  --sidebar-accent-foreground: #2B2622;
-  --sidebar-border: #D9D0BF;
-  --sidebar-ring: #B65C38;
+  --sidebar-accent: #EBE3D5;
+  --sidebar-accent-foreground: #221C18;
+  --sidebar-border: #D8CABA;
+  --sidebar-ring: #B85D36;
 }
 
 @layer base {
@@ -161,6 +161,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-color: #F4EFE6;
+    background-image: 
+      radial-gradient(ellipse 70% 35% at 50% 0%, rgba(184, 93, 54, 0.09), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgba(217, 119, 6, 0.05), transparent 60%);
+    background-attachment: fixed;
   }
   html {
     @apply font-sans;
